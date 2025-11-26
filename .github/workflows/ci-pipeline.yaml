@@ -11,19 +11,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout repo
+      # Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: setup Go
+
+      # Install SonarCloud scanner
+      - name: Install Sonar Scanner
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=saiharshithabs_devSecOps-nov25
+            -Dsonar.organization=saiharshithabs
+            -Dsonar.go.coverage.reportPaths=coverage.out
+
+      # Setup Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.22"
-      
-      - name: build binary
+
+      # Run tests + generate coverage report for SonarCloud
+      - name: Run Tests with Coverage
+        run: go test ./... -coverprofile=coverage.out
+
+      # Build Go binary
+      - name: Build binary
         run: |
           GOOS=linux GOARCH=amd64 go build -o app .
 
-      - name: build docker images
+      # Build Docker image only on push
+      - name: Build Docker image
         if: github.event_name == 'push'
         run: |
-          docker build -t myapp:latest . 
+          docker build -t myapp:latest .
